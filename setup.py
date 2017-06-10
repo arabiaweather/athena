@@ -17,5 +17,5 @@ setup(
     author_email='khaled.sharif@arabiaweather.com',
     keywords='machine-learning curve-fitting data-science',
     packages=find_packages(exclude=['contrib', 'docs', 'tests', 'notebooks', 'examples']),
-    install_requires=['pandas', 'tensorflow', 'sklearn', 'sympy'],
+    install_requires=['pandas', 'tensorflow', 'sklearn', 'sympy', 'scipy'],
 )

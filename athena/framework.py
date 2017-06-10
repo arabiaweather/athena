@@ -1,6 +1,3 @@
-from athena.model import Model
-from athena.dataset import Dataset
-
 class Framework:
 	def __init__(self, framework_parameters=None):
 		from athena.equations import Equation
@@ -18,7 +15,7 @@ class Framework:
 		}
 
 		if framework_parameters is not None:
-			for f,p in framework_parameters.items():
+			for f, p in framework_parameters.items():
 				if f in fp:
 					fp[f] = p
 				else:
@@ -31,8 +28,15 @@ class Framework:
 		self.dataset = None
 		self.model = None
 
+	def reset(self):
+		from athena.equations import Equation
+		self.eqn = Equation()
+		self.eqn_test = Equation()
+		self.model = None
+		return self
 
-	def initialize(self, model: Model, targets):
+	def initialize(self, model, targets):
+		from athena.model import Model
 		assert isinstance(model, Model)
 		predictions = model.get_training_equation()
 
@@ -41,6 +45,7 @@ class Framework:
 		import tensorflow
 
 		self.model = model
+		self.training_targets = targets
 
 		# TODO: fix the non deterministic reduce function when on gpu or multi cpu
 		# see: https://www.twosigma.com/insights/a-workaround-for-non-determinism-in-tensorflow
@@ -57,7 +62,8 @@ class Framework:
 		self.init = tensorflow.global_variables_initializer()
 		self.session.run(self.init)
 
-	def add_dataset(self, dataset: Dataset):
+	def add_dataset(self, dataset):
+		from athena.dataset import Dataset
 		assert isinstance(dataset, Dataset)
 		self.dataset = dataset
 

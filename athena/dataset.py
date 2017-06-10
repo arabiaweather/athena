@@ -1,8 +1,9 @@
-from pandas import DataFrame
-from athena.equations import Equation
-
 class Dataset():
-	def __init__(self, training_df: DataFrame, testing_df: DataFrame, parameters_map=None):
+	def __init__(self, training_df, testing_df, parameters_map=None):
+		import numpy as np
+		from pandas import DataFrame
+		from athena.equations import Equation
+
 		if parameters_map is None:
 			parameters_map = {"not_normalized": {}}
 			for l in list(training_df):
@@ -13,6 +14,11 @@ class Dataset():
 		assert isinstance(parameters_map, dict)
 
 		self.ds = {"training": {}, "testing": {}}
+
+		if "target" in parameters_map:
+			target_column_name = parameters_map["target"]
+			self.training_targets = training_df[target_column_name].values.astype(np.float32)
+			self.testing_targets = testing_df[target_column_name].values.astype(np.float32)
 
 		if "normalized" in parameters_map:
 			for column_name, variable_name in parameters_map["normalized"].items():
@@ -25,8 +31,8 @@ class Dataset():
 				# Parameters here require normalization; testing data-set uses
 				# normalization min/max from training for consistency.
 				# ==========================================================================================
-				self.ds["training"][column_name] = Equation.normalize(training_df[column_name].values, variable_name)
-				self.ds["testing"][column_name] = Equation.normalize(testing_df[column_name].values, variable_name,
+				self.ds["training"][column_name] = Equation.normalize(training_df[column_name].values.astype(np.float32), variable_name)
+				self.ds["testing"][column_name] = Equation.normalize(testing_df[column_name].values.astype(np.float32), variable_name,
 													   min=self.ds["training"][column_name][-1][0],
 													   max=self.ds["training"][column_name][-1][1])
 
@@ -43,10 +49,14 @@ class Dataset():
 				# ==========================================================================================
 				# Parameters here require no normalization at all.
 				# ==========================================================================================
-				self.ds["training"][column_name] = training_df[column_name].values, variable_name
-				self.ds["testing"][column_name] = testing_df[column_name].values, variable_name
+				self.ds["training"][column_name] = training_df[column_name].values.astype(np.float32), variable_name
+				self.ds["testing"][column_name] = testing_df[column_name].values.astype(np.float32), variable_name
 
 	def get(self, p: str):
 		assert p in self.ds
 		return self.ds[p]
+
+
+	def get_columns(self):
+		return list(self.ds["training"].keys())
 
