@@ -58,3 +58,4 @@ The resulting equation can be pretty printed to a Python notebook, or better yet
 What makes any open source project great is the contributions of the community. Below are many great tutorials (in the form of Python notebooks) that show real world examples of powerful equation building and modelling techniques. You can contribute to this list too by submitting a pull request.
 
 * [Modelling the Effect of Relative Humidity on Surface Temperature](https://github.com/arabiaweather/athena/blob/master/notebooks/temperature.ipynb)
+* [Searching Through Randomly Generated Equations to Maximize Accuracy](https://github.com/arabiaweather/athena/blob/master/notebooks/searching.ipynb)
