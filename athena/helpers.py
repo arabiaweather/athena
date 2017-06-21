@@ -35,3 +35,12 @@ def split_dataframe(data_frame, split=0.9):
 	data_frame.drop("is_training", axis=1, inplace=True)
 
 	return training_df, testing_df
+
+
+def mean_confidence_interval (a, confidence=0.95):
+	import numpy as np
+	import scipy.stats
+	n = len(a)
+	m, se = np.mean(a), scipy.stats.sem(a)
+	h = se * scipy.stats.t._ppf((1 + confidence) / 2., n - 1)
+	return m, m - h, m + h

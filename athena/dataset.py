@@ -4,6 +4,9 @@ class Dataset():
 		from pandas import DataFrame
 		from athena.equations import Equation
 
+		self.training_df = training_df
+		self.testing_df = testing_df
+
 		if parameters_map is None:
 			parameters_map = {"not_normalized": {}}
 			for l in list(training_df):
@@ -15,10 +18,16 @@ class Dataset():
 
 		self.ds = {"training": {}, "testing": {}}
 
+		self.inverse_parameters_map = {}
+		for l in ["normalized", "not_normalized"]:
+			if l not in parameters_map: continue
+			for i, j in parameters_map[l].items():
+				self.inverse_parameters_map[j] = i
+
 		if "target" in parameters_map:
-			target_column_name = parameters_map["target"]
-			self.training_targets = training_df[target_column_name].values.astype(np.float32)
-			self.testing_targets = testing_df[target_column_name].values.astype(np.float32)
+			self.target_column_name = parameters_map["target"]
+			self.training_targets = training_df[self.target_column_name].values.astype(np.float32)
+			self.testing_targets = testing_df[self.target_column_name].values.astype(np.float32)
 
 		if "normalized" in parameters_map:
 			for column_name, variable_name in parameters_map["normalized"].items():

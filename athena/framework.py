@@ -87,10 +87,11 @@ class Framework:
 			self.run_learning_step()
 		self.after_training_checks()
 
-	def produce_equation(self):
+	def produce_equation(self, constituents=False):
 		from sympy import init_printing
 		init_printing()
 		equations = self.eqn.produce_equations(self.session)
+		if constituents: return equations
 		return self.model.consolidate(equations)
 
 	def get_training_predictions(self):

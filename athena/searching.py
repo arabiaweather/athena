@@ -1,18 +1,28 @@
 from athena.equations import *
+from sympy import Symbol, lambdify, N
+import numpy as np
+from athena.framework import Framework
+from athena.helpers import mean_confidence_interval
+
 
 class RandomSearch:
-	def __init__(self, framework, search_length=100, equation_length=25, equations=None):
+	def __init__ (self, framework, search_length=100, equation_length=25, equations=None, starting_equations=None):
 		self.search_length = search_length
 		self.equation_length = equation_length
 		self.framework = framework
+
+		# If this is not none, then it is a list of args,kwargs (in the form of a dict), that
+		# can be used to reconstruct an equation shape
+		self.starting_equations = starting_equations
 
 		if equations is not None:
 			assert isinstance(equations, list)
 			self.functions = equations
 		else:
-			self.functions = [SimpleSinusoidal, BipolarPolynomial, FlexiblePower]
+			self.functions = [SimpleSinusoidal, SimplePolynomial, BipolarPolynomial, FlexiblePower, Exponential,
+			                  Logarithm]
 
-	def iteration(self):
+	def iteration (self, return_constituents=False):
 		from random import choice
 		from sklearn.metrics import mean_absolute_error, r2_score
 		from scipy.stats import pearsonr
@@ -28,16 +38,17 @@ class RandomSearch:
 		from athena.model import AdditiveModel
 		model = AdditiveModel(fw)
 
-		# ==========================================================================================
-		# Random model definition
-		# ==========================================================================================
-		model.add(Bias)
+		if self.starting_equations is not None:
+			for se in self.starting_equations:
+				model.add(*se["args"], **se["kwargs"])
+		else:
+			model.add(Bias)
+
 		for j in range(self.equation_length):
 			if choice([False, True]):
-				if choice([False, True]):
-					model.add(choice(self.functions), choice(self.functions), choice(fw.dataset.get_columns()))
-				else:
-					model.add(choice(self.functions), choice(fw.dataset.get_columns()))
+				model.add(choice(self.functions), choice(self.functions), choice(fw.dataset.get_columns()))
+			else:
+				model.add(choice(self.functions), choice(fw.dataset.get_columns()))
 
 		fw.initialize(model, training_targets)
 
@@ -73,38 +84,117 @@ class RandomSearch:
 			else:
 				error = None
 
-		except Exception as e:
+		except:
 			error = None
 
-		equation = fw.produce_equation()
-		fw.session.close()
-		del fw
-
+		equation = fw.produce_equation(constituents=return_constituents)
 		self.searching_semaphore.release()
 
 		if error is not None:
-			error["equation"] = equation
+			error["equation"] = copy(equation)
+			error["reconstruction"] = copy(model.model_construction)
 			self.equations.append(error)
 
-	def search(self, metric="testing_r2"):
+		fw.session.close()
+		del fw
+
+	def search (self, metric="testing_r2", return_constituents=False):
 		from tqdm import tqdm
 		from threading import Thread, Semaphore
 		from os import cpu_count
+		import sys
 
 		self.equations = []
 		self.searching_threads = []
 		self.searching_semaphore = Semaphore(value=cpu_count())
 
 		for iteration in range(self.search_length):
-			self.searching_threads.append(Thread(target=self.iteration))
+			self.searching_threads.append(
+				Thread(target=self.iteration, kwargs={"return_constituents": return_constituents}))
 			self.searching_threads[-1].start()
 
 		for thread in tqdm(self.searching_threads):
 			thread.join()
 
+		sys.stdout.flush()
+
 		self.equations = sorted(self.equations, key=lambda x: x[metric])
 		if "pearson" in metric or "r2" in metric:
 			self.equations = self.equations[::-1]
 
-	def get_best_equations(self, k=1):
-		return self.equations[:k]
+	def get_best_equations (self, k=1):
+		if k != 0:
+			return self.equations[:k]
+		else:
+			return self.equations
+
+
+class GeneticSearch:
+	def __init__ (self, fw: Framework, search_length, equation_length):
+		self.fw = fw
+
+		self.search_length = search_length
+		self.equation_length = equation_length
+
+		self.starting_equations = None
+		self.iterations = 0
+
+	def _remove_indices(self, x, indices):
+		return [i for j, i in enumerate(x) if j not in indices]
+
+	def iteration (self):
+		self.iterations += 1
+
+		while True:
+			rs = RandomSearch(self.fw,
+			                  search_length=self.search_length,
+			                  equation_length=self.equation_length,
+			                  starting_equations=self.starting_equations)
+
+			rs.search(return_constituents=True)
+			equation = rs.get_best_equations(k=1)
+
+			if len(equation) == 0:
+				print("Iteration produced bad results, retrying.")
+			else:
+				equation = equation[0]
+				break
+
+		biases, equations = 0, []
+		for i, cnst in enumerate(equation["equation"]):
+			if len(cnst.atoms(Symbol)) == 0:
+				biases += cnst
+			else:
+				equations += [cnst]
+
+		equation["equation"] = [biases] + equations
+
+		eq_df = []
+
+		for i, cnst in enumerate(equation["equation"]):
+			if not hasattr(cnst, 'atoms'): continue
+			variables = cnst.atoms(Symbol)
+
+			substitutions = [self.fw.dataset.training_df[self.fw.dataset.inverse_parameters_map[str(v)]].values for v in variables]
+			function = lambdify(tuple(variables), cnst, "numpy")
+			_contribution = np.abs(function(*tuple(substitutions))) / self.fw.dataset.training_targets * 100.0
+			contribution = mean_confidence_interval(_contribution, 0.99)
+
+			eq_df.append({"constituent" : str(N(cnst, 1)),
+			              "contribution": int(round(contribution[0]))})
+
+		equation["constituents"] = eq_df
+
+		indexes_to_remove = []
+
+		for i, j in enumerate(equation["constituents"]):
+			if j["contribution"] < 1:
+				indexes_to_remove.append(i)
+
+		equation["constituents"] = self._remove_indices(equation["constituents"], indexes_to_remove)
+		equation["reconstruction"] = self._remove_indices(equation["reconstruction"], indexes_to_remove)
+		equation["equation"] = self._remove_indices(equation["equation"], indexes_to_remove)
+
+		self.starting_equations = equation["reconstruction"]
+
+		return equation

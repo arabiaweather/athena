@@ -8,6 +8,8 @@ class Model:
 		self.testing_equation = framework.eqn_test
 		self.datasets = framework.dataset
 
+		self.model_construction = []
+
 	def get_training_equation (self):
 		assert "training" in self.learning_equations
 		return self.learning_equations["training"]
@@ -31,6 +33,8 @@ class Model:
 
 class AdditiveModel(Model):
 	def add (self, *args, **kwargs):
+		self.model_construction.append({"args": args, "kwargs": kwargs})
+
 		from types import FunctionType
 		function, parameter = None, None
 
