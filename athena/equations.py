@@ -21,6 +21,8 @@ class Equation:
 				if isinstance(sub[0], Tensor): sub[0] = session.run(sub[0])
 
 				assert isinstance(sub[1], Symbol)
+
+				# TODO: investigate why the following line produces a KeyError in Sympy
 				e["equation-string"] = e["equation-string"].subs(sub[1], sub[0])
 
 			equation.append(e["equation-string"])
@@ -178,7 +180,6 @@ def Logarithm (self, x, x_string):
 	return {"equation": eq, "parameters": parameters_list, "symbolic": equation_string, "offset": offset}
 
 
-# TODO: fix this function to conform to the new function standards (as in the functions above)
 def Sinusoidal (self, x, x_string, h, h_string):
 	offset, variables = 4, 2
 	eq = self.w[self._wc] * (tf.sin(h * 2 * np.pi + self.w[self._wc + 1]) + self.w[self._wc + 2]) * (x + self.w[self._wc + 3])
@@ -191,5 +192,20 @@ def Sinusoidal (self, x, x_string, h, h_string):
 	equation_string = syms[0] * (sin(syms[-1] * 2 * pi + syms[1]) + syms[2]) * (syms[-2] + syms[3])
 	parameters_list = [[x_string, syms[-2]], [h_string, syms[-1]]] + [[self.w[self._wc + i], syms[i]] for i in range(offset)]
 
+
+	return {"equation": eq, "parameters": parameters_list, "symbolic": equation_string, "offset": offset}
+
+
+def MultiPolynomial (self, x, x_string, y, y_string):
+	offset, variables = 6, 2
+	eq = self.w[self._wc] * (self.w[self._wc + 1]*(x + self.w[self._wc + 2]) + self.w[self._wc + 3]*(y + self.w[self._wc + 4]) + self.w[self._wc + 5])
+
+	if isinstance(x_string, dict) or isinstance(y_string, dict):
+		# at this time multi-variable functions do not support composition
+		raise NotImplementedError()
+
+	syms = get_symbols(1, offset + variables + 1)
+	equation_string = syms[0] * (syms[1]*(syms[-2] + syms[2]) + syms[3]*(syms[-1] + syms[4]) + syms[5])
+	parameters_list = [[x_string, syms[-2]], [y_string, syms[-1]]] + [[self.w[self._wc + i], syms[i]] for i in range(offset)]
 
 	return {"equation": eq, "parameters": parameters_list, "symbolic": equation_string, "offset": offset}

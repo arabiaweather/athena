@@ -33,8 +33,8 @@ class Model:
 
 class AdditiveModel(Model):
 	def add (self, *args, **kwargs):
-		self.model_construction.append({"args": args, "kwargs": kwargs})
 
+		#print("model: ", *args)
 		from types import FunctionType
 		function, parameter = None, None
 
@@ -103,6 +103,7 @@ class AdditiveModel(Model):
 
 			self.learning_equations[learning_case] += result["equation"]
 			self.add_offset(_eqn, result["offset"])
+			self.model_construction.append({"args": args, "kwargs": kwargs})
 
 			if len(function) == 1:
 				self.function_definition(_eqn, result["parameters"], result["symbolic"])

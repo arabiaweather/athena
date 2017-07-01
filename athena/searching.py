@@ -3,7 +3,7 @@ from sympy import Symbol, lambdify, N
 import numpy as np
 from athena.framework import Framework
 from athena.helpers import mean_confidence_interval
-
+from sympy.core.cache import clear_cache
 
 class RandomSearch:
 	def __init__ (self, framework, search_length=100, equation_length=25, equations=None, starting_equations=None):
@@ -20,15 +20,13 @@ class RandomSearch:
 			self.functions = equations
 		else:
 			self.functions = [SimpleSinusoidal, SimplePolynomial, BipolarPolynomial, FlexiblePower, Exponential,
-			                  Logarithm]
+			                  Logarithm, Sinusoidal, MultiPolynomial]
 
 	def iteration (self, return_constituents=False):
 		from random import choice
 		from sklearn.metrics import mean_absolute_error, r2_score
 		from scipy.stats import pearsonr
 		from copy import copy
-
-		self.searching_semaphore.acquire()
 
 		fw = copy(self.framework).reset()
 
@@ -40,22 +38,39 @@ class RandomSearch:
 
 		if self.starting_equations is not None:
 			for se in self.starting_equations:
-				model.add(*se["args"], **se["kwargs"])
+				try:
+					if choice(range(10)) >= 4:
+						model.add(*se["args"], **se["kwargs"])
+				except:
+					continue
 		else:
 			model.add(Bias)
 
-		for j in range(self.equation_length):
-			if choice([False, True]):
-				model.add(choice(self.functions), choice(self.functions), choice(fw.dataset.get_columns()))
-			else:
-				model.add(choice(self.functions), choice(fw.dataset.get_columns()))
+		i, j = 0, 0
+		while j < self.equation_length:
+			try:
+				if choice([False, True]):
+					model.add(choice(self.functions), choice(self.functions), choice(fw.dataset.get_columns()))
+				elif choice([False, True]):
+					model.add(choice(self.functions), choice(self.functions), choice(fw.dataset.get_columns()), choice(fw.dataset.get_columns()))
+				else:
+					model.add(choice(self.functions), choice(fw.dataset.get_columns()))
 
-		fw.initialize(model, training_targets)
+				j += 1
+			except:
+				continue
 
-		fw.get_testing_predictions()
+		self.searching_semaphore.acquire()
 
-		for _ in range(int(fw.max_iters)):
-			fw.run_learning_step()
+		try:
+			fw.initialize(model, training_targets)
+			fw.get_testing_predictions()
+			for _ in range(int(fw.max_iters)):
+				fw.run_learning_step()
+		except:
+			self.searching_semaphore.release()
+			del fw
+			return
 
 		try:
 			training_t = training_targets, fw.get_training_predictions()
@@ -84,10 +99,10 @@ class RandomSearch:
 			else:
 				error = None
 
+			equation = fw.produce_equation(constituents=return_constituents)
 		except:
 			error = None
 
-		equation = fw.produce_equation(constituents=return_constituents)
 		self.searching_semaphore.release()
 
 		if error is not None:
@@ -106,7 +121,7 @@ class RandomSearch:
 
 		self.equations = []
 		self.searching_threads = []
-		self.searching_semaphore = Semaphore(value=cpu_count())
+		self.searching_semaphore = Semaphore(value=cpu_count()*4)
 
 		for iteration in range(self.search_length):
 			self.searching_threads.append(
@@ -146,17 +161,22 @@ class GeneticSearch:
 		self.iterations += 1
 
 		while True:
+			clear_cache()
+
 			rs = RandomSearch(self.fw,
 			                  search_length=self.search_length,
 			                  equation_length=self.equation_length,
 			                  starting_equations=self.starting_equations)
 
 			rs.search(return_constituents=True)
-			equation = rs.get_best_equations(k=1)
+			equation = rs.get_best_equations(k=0)
+
+			clear_cache()
 
 			if len(equation) == 0:
 				print("Iteration produced bad results, retrying.")
 			else:
+				print("Iteration produced {} equations.".format(len(equation)))
 				equation = equation[0]
 				break
 
@@ -180,7 +200,7 @@ class GeneticSearch:
 			_contribution = np.abs(function(*tuple(substitutions))) / self.fw.dataset.training_targets * 100.0
 			contribution = mean_confidence_interval(_contribution, 0.99)
 
-			eq_df.append({"constituent" : str(N(cnst, 1)),
+			eq_df.append({"constituent" : str(cnst),
 			              "contribution": int(round(contribution[0]))})
 
 		equation["constituents"] = eq_df
