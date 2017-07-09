@@ -1,11 +1,15 @@
 import tensorflow as tf
 import numpy as np
-from sympy import symbols, sin, pi, exp, log, Expr
+from sympy import symbols, sin, sech, pi, exp, log, Expr
 
 class Equation:
-	def __init__ (self):
+	def __init__ (self, tf_graph):
+		self.tf_graph = tf_graph
+
 		# TODO: the number of Tensorflow variables should not be fixed but instead should change dynamically as the model grows
-		self.w = tf.Variable(tf.random_normal([100], mean=0, stddev=1), name='coefficients')
+
+		with self.tf_graph.as_default():
+			self.w = tf.Variable(tf.random_normal([1000], mean=0, stddev=1), name='coefficients')
 
 		self._wc = int(0)
 		self.equations = []
@@ -52,6 +56,11 @@ class Equation:
 		string = (x - _min) / (_max - _min)
 
 		return [normalized_array, string, (_min, _max)]
+
+	@staticmethod
+	def tf_secant_h(x):
+		return 2.0 / (tf.exp(x) + tf.exp(-1.0*x))
+
 
 
 def get_symbols (start, end):
@@ -108,7 +117,7 @@ def Bias (self):
 
 def FlexiblePower (self, x, x_string):
 	offset, variables = 3, 1
-	eq = self.w[self._wc] * (tf.pow(x, self.w[self._wc + 1] + 1) + self.w[self._wc + 2])
+	eq = self.w[self._wc] * (tf.pow(x, self.w[self._wc + 1]) + self.w[self._wc + 2])
 
 	if isinstance(x_string, str) or isinstance(x_string, Expr):
 		syms = get_symbols(1, offset + variables + 1)
@@ -196,16 +205,104 @@ def Sinusoidal (self, x, x_string, h, h_string):
 	return {"equation": eq, "parameters": parameters_list, "symbolic": equation_string, "offset": offset}
 
 
-def MultiPolynomial (self, x, x_string, y, y_string):
-	offset, variables = 6, 2
-	eq = self.w[self._wc] * (self.w[self._wc + 1]*(x + self.w[self._wc + 2]) + self.w[self._wc + 3]*(y + self.w[self._wc + 4]) + self.w[self._wc + 5])
+def MultiPolynomial (self, *args):
+	assert len(args) >= 2
+	assert len(args) % 2 == 0
+
+	variables = int(len(args) / 2)
+	offset = 2 + 2 * variables
+
+	variable_objects = []
+	equation_objects = []
+	for i, e in enumerate(args):
+		if i % 2 == 0:
+			variable_objects.append(e)
+		else:
+			equation_objects.append(e)
+
+	for x_string in equation_objects:
+		if isinstance(x_string, dict):
+			# at this time multi-variable functions do not support composition
+			raise NotImplementedError()
+
+	sub_eq = 1
+	j = 2
+	for x in variable_objects:
+		sub_eq *= self.w[self._wc + j] * (x + self.w[self._wc + j + 1])
+		j += 2
+	eq = self.w[self._wc] * (sub_eq + self.w[self._wc + 1])
+
+	syms = get_symbols(1, offset + variables + 1)
+
+	sub_equation_string = 1
+	j = 2
+	for i in range(len(equation_objects)):
+		sub_equation_string *= syms[j]*(syms[-1*(i+1)] + syms[j+1])
+		j += 2
+	equation_string = syms[0] * (sub_equation_string + syms[1])
+
+	parameters_list = []
+	for i, j in enumerate(equation_objects):
+		parameters_list.append([j, syms[-1*(i+1)]])
+	parameters_list += [[self.w[self._wc + i], syms[i]] for i in range(offset)]
+
+	return {"equation": eq, "parameters": parameters_list, "symbolic": equation_string, "offset": offset}
+
+def MultiDimensionalSecant (self, *args):
+	assert len(args) >= 2
+	assert len(args) % 2 == 0
+
+	variables = int(len(args) / 2)
+	offset = 2 + 3 * variables
+
+	variable_objects = []
+	equation_objects = []
+	for i, e in enumerate(args):
+		if i % 2 == 0:
+			variable_objects.append(e)
+		else:
+			equation_objects.append(e)
+
+	for x_string in equation_objects:
+		if isinstance(x_string, dict):
+			# at this time multi-variable functions do not support composition
+			raise NotImplementedError()
+
+	sub_eq = 1
+	j = 2
+	for x in variable_objects:
+		sub_eq *= Equation.tf_secant_h(self.w[self._wc + j]*x + self.w[self._wc + j + 1])
+		j += 2
+	eq = self.w[self._wc] * (sub_eq + self.w[self._wc + 1])
+
+	syms = get_symbols(1, offset + variables + 1)
+
+	sub_equation_string = 1
+	j = 2
+	for i in range(len(equation_objects)):
+		sub_equation_string *= sech(syms[j]*syms[-1*(i+1)] + syms[j+1])
+		j += 2
+	equation_string = syms[0] * (sub_equation_string + syms[1])
+
+	parameters_list = []
+	for i, j in enumerate(equation_objects):
+		parameters_list.append([j, syms[-1*(i+1)]])
+	parameters_list += [[self.w[self._wc + i], syms[i]] for i in range(offset)]
+
+	return {"equation": eq, "parameters": parameters_list, "symbolic": equation_string, "offset": offset}
+
+'''
+def MultiDimensionalSecant (self, x, x_string, y, y_string):
+	offset, variables = 7, 2
+	eq = self.w[self._wc] * (self.w[self._wc + 1] * Equation.tf_secant_h(self.w[self._wc + 2] * x + self.w[self._wc + 3]) * Equation.tf_secant_h(self.w[self._wc + 4] * y + self.w[self._wc + 5]) + self.w[self._wc + 6])
 
 	if isinstance(x_string, dict) or isinstance(y_string, dict):
 		# at this time multi-variable functions do not support composition
 		raise NotImplementedError()
 
 	syms = get_symbols(1, offset + variables + 1)
-	equation_string = syms[0] * (syms[1]*(syms[-2] + syms[2]) + syms[3]*(syms[-1] + syms[4]) + syms[5])
+	equation_string = syms[0] * (syms[1] * sech(syms[2] * syms[-2] + syms[3]) * sech(syms[4] * syms[-1] + syms[5]) + syms[6])
 	parameters_list = [[x_string, syms[-2]], [y_string, syms[-1]]] + [[self.w[self._wc + i], syms[i]] for i in range(offset)]
 
 	return {"equation": eq, "parameters": parameters_list, "symbolic": equation_string, "offset": offset}
+'''

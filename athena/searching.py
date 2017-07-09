@@ -5,6 +5,7 @@ from athena.framework import Framework
 from athena.helpers import mean_confidence_interval
 from sympy.core.cache import clear_cache
 
+
 class RandomSearch:
 	def __init__ (self, framework, search_length=100, equation_length=25, equations=None, starting_equations=None):
 		self.search_length = search_length
@@ -19,11 +20,10 @@ class RandomSearch:
 			assert isinstance(equations, list)
 			self.functions = equations
 		else:
-			self.functions = [SimpleSinusoidal, SimplePolynomial, BipolarPolynomial, FlexiblePower, Exponential,
-			                  Logarithm, Sinusoidal, MultiPolynomial]
+			self.functions = [SimpleSinusoidal, SimplePolynomial, BipolarPolynomial, Sinusoidal, MultiPolynomial]
 
 	def iteration (self, return_constituents=False):
-		from random import choice
+		from random import choice, randint
 		from sklearn.metrics import mean_absolute_error, r2_score
 		from scipy.stats import pearsonr
 		from copy import copy
@@ -39,22 +39,26 @@ class RandomSearch:
 		if self.starting_equations is not None:
 			for se in self.starting_equations:
 				try:
-					if choice(range(10)) >= 4:
+					if choice([False, True]):
 						model.add(*se["args"], **se["kwargs"])
 				except:
 					continue
-		else:
-			model.add(Bias)
 
-		i, j = 0, 0
+		model.add(Bias)
+
+		# TODO: make sure we aren't wasting our time here by searching for an equation that has already been tried out before
+
+		j = 0
 		while j < self.equation_length:
 			try:
+				chosen_columns = []
+				for i in range(randint(1,len(fw.dataset.get_columns()))):
+					chosen_columns.append(choice(fw.dataset.get_columns()))
+
 				if choice([False, True]):
-					model.add(choice(self.functions), choice(self.functions), choice(fw.dataset.get_columns()))
-				elif choice([False, True]):
-					model.add(choice(self.functions), choice(self.functions), choice(fw.dataset.get_columns()), choice(fw.dataset.get_columns()))
+					model.add(choice(self.functions), choice(self.functions), *chosen_columns)
 				else:
-					model.add(choice(self.functions), choice(fw.dataset.get_columns()))
+					model.add(choice(self.functions), *chosen_columns)
 
 				j += 1
 			except:
@@ -63,10 +67,18 @@ class RandomSearch:
 		self.searching_semaphore.acquire()
 
 		try:
-			fw.initialize(model, training_targets)
+			fw.initialize(model, training_targets, loss_function="r2")
 			fw.get_testing_predictions()
-			for _ in range(int(fw.max_iters)):
+
+			# We will make this iteration stop earlier than planned if it can
+			# be proven that this equation is diverging (going to infinity)!
+			for fw_iteration in range(int(fw.max_iters)):
 				fw.run_learning_step()
+				if fw_iteration == int(int(fw.max_iters) / 10.0):
+					fw_predictions = fw.get_training_predictions()
+					if not np.isfinite(fw_predictions).all():
+						raise ValueError()
+
 		except:
 			self.searching_semaphore.release()
 			del fw
@@ -85,7 +97,7 @@ class RandomSearch:
 			training_r2 = r2_score(*training_t)
 			testing_r2 = r2_score(*testing_t)
 
-			if train_correlation > 0.05 and test_correlation > 0.05 and training_r2 > 0.05 and testing_r2 > 0.05:
+			if train_correlation > 0.25 and test_correlation > 0.25:
 				error = {
 					"training_mae"    : training_error,
 					"testing_mae"     : testing_error,
@@ -121,13 +133,16 @@ class RandomSearch:
 
 		self.equations = []
 		self.searching_threads = []
-		self.searching_semaphore = Semaphore(value=cpu_count()*4)
+		self.searching_semaphore = Semaphore(value=cpu_count() * 4)
 
 		for iteration in range(self.search_length):
 			self.searching_threads.append(
 				Thread(target=self.iteration, kwargs={"return_constituents": return_constituents}))
 			self.searching_threads[-1].start()
 
+		# TODO: find a better way to show progress feedback to the user
+		# the problem with using tqdm on joining threads is that the
+		# shown % done and iterations/second is inaccurate
 		for thread in tqdm(self.searching_threads):
 			thread.join()
 
@@ -154,13 +169,17 @@ class GeneticSearch:
 		self.starting_equations = None
 		self.iterations = 0
 
-	def _remove_indices(self, x, indices):
+	def _remove_indices (self, x, indices):
 		return [i for j, i in enumerate(x) if j not in indices]
 
 	def iteration (self):
 		self.iterations += 1
 
 		while True:
+			# We have to clear Sympy's cache before and after a random search,
+			# otherwise we will bump into a Sympy cache key error.
+			# The reason for this is unknown to me, but clearing the cache
+			# has somehow solved this problem completely.
 			clear_cache()
 
 			rs = RandomSearch(self.fw,
@@ -180,6 +199,7 @@ class GeneticSearch:
 				equation = equation[0]
 				break
 
+		'''
 		biases, equations = 0, []
 		for i, cnst in enumerate(equation["equation"]):
 			if len(cnst.atoms(Symbol)) == 0:
@@ -189,21 +209,24 @@ class GeneticSearch:
 
 		equation["equation"] = [biases] + equations
 
+
 		eq_df = []
 
 		for i, cnst in enumerate(equation["equation"]):
 			if not hasattr(cnst, 'atoms'): continue
 			variables = cnst.atoms(Symbol)
 
-			substitutions = [self.fw.dataset.training_df[self.fw.dataset.inverse_parameters_map[str(v)]].values for v in variables]
+			substitutions = [self.fw.dataset.training_df[self.fw.dataset.inverse_parameters_map[str(v)]].values for v in
+			                 variables]
 			function = lambdify(tuple(variables), cnst, "numpy")
 			_contribution = np.abs(function(*tuple(substitutions))) / self.fw.dataset.training_targets * 100.0
 			contribution = mean_confidence_interval(_contribution, 0.99)
 
 			eq_df.append({"constituent" : str(cnst),
-			              "contribution": int(round(contribution[0]))})
+			              "contribution": round(contribution[0])})
 
 		equation["constituents"] = eq_df
+
 
 		indexes_to_remove = []
 
@@ -214,6 +237,7 @@ class GeneticSearch:
 		equation["constituents"] = self._remove_indices(equation["constituents"], indexes_to_remove)
 		equation["reconstruction"] = self._remove_indices(equation["reconstruction"], indexes_to_remove)
 		equation["equation"] = self._remove_indices(equation["equation"], indexes_to_remove)
+		'''
 
 		self.starting_equations = equation["reconstruction"]
 
