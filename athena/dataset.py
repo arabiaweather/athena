@@ -33,8 +33,8 @@ class Dataset():
 			for column_name, variable_name in parameters_map["normalized"].items():
 				assert isinstance(column_name, str)
 				assert isinstance(variable_name, str)
-				assert column_name in list(training_df)
-				assert column_name in list(testing_df)
+				assert column_name in list(training_df), column_name
+				assert column_name in list(testing_df), column_name
 
 				# ==========================================================================================
 				# Parameters here require normalization; testing data-set uses
