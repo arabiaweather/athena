@@ -59,3 +59,4 @@ What makes any open source project great is the contributions of the community. 
 
 * [Modelling the Effect of Relative Humidity on Surface Temperature](https://github.com/arabiaweather/athena/blob/master/notebooks/temperature.ipynb)
 * [Searching Through Randomly Generated Equations to Maximize Accuracy](https://github.com/arabiaweather/athena/blob/master/notebooks/searching.ipynb)
+* [Using Athena's Built-in Genetic Algorithm to Search for and Interpret an Accurate Model](https://github.com/arabiaweather/athena/blob/master/notebooks/genetic.ipynb)
