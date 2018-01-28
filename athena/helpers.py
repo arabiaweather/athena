@@ -1,7 +1,18 @@
-# ==========================================================================================
-# Helper function for printing curve fitting statistics.
-# ==========================================================================================
+from __future__ import print_function
+
 def print_statistics(testing_targets, predictions):
+	"""
+    Helper function for printing curve fitting statistics.
+
+    Athena uses a random forest from Scikit-Learn to select the best parameters. Use this constructor to create a Selection class.
+
+    Parameters
+    ----------
+    testing_targets : ?
+        Number of estimators (decision trees) the Random Forest will use.
+    predictions : ?
+        Number of threads the Random Forest will utilize.
+    """
 	from sklearn.metrics import mean_squared_error
 	from scipy.stats import pearsonr
 	from numpy import percentile, abs, sqrt
@@ -19,10 +30,20 @@ def print_statistics(testing_targets, predictions):
 
 	print('\t'.join([str(round(x)) for x in output]))
 
-# ==========================================================================================
-# Helper function for splitting data-set into training and testing sets.
-# ==========================================================================================
+
 def split_dataframe(data_frame, split=0.9):
+	"""
+    Helper function for splitting data-set into training and testing sets.
+
+    Athena uses a random forest from Scikit-Learn to select the best parameters. Use this constructor to create a Selection class.
+
+    Parameters
+    ----------
+    data_frame : pandas.DataFrame
+        Number of estimators (decision trees) the Random Forest will use.
+    split : float
+        Number of threads the Random Forest will utilize.
+    """
 	from numpy import random
 	from pandas import DataFrame
 
@@ -38,9 +59,21 @@ def split_dataframe(data_frame, split=0.9):
 
 
 def mean_confidence_interval (a, confidence=0.95):
-	import numpy as np
-	import scipy.stats
+	"""
+    Helper function for calculating a mean confidence interval
+
+    Athena uses a random forest from Scikit-Learn to select the best parameters. Use this constructor to create a Selection class.
+
+    Parameters
+    ----------
+    a : ?
+        Number of estimators (decision trees) the Random Forest will use.
+    confidence : float
+        Number of threads the Random Forest will utilize.
+    """
+	from numpy import mean
+	from scipy.stats import sem, t
 	n = len(a)
-	m, se = np.mean(a), scipy.stats.sem(a)
-	h = se * scipy.stats.t._ppf((1 + confidence) / 2., n - 1)
+	m, se = mean(a), sem(a)
+	h = se * t._ppf((1 + confidence) / 2., n - 1)
 	return m, m - h, m + h

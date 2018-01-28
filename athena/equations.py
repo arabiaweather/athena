@@ -6,10 +6,19 @@ from copy import copy
 
 class Equation:
     def __init__(self, tf_graph):
+        """
+        Selection constructor function
+
+        Athena uses a random forest from Scikit-Learn to select the best parameters. Use this constructor to create a Selection class.
+
+        Parameters
+        ----------
+        tf_graph : ?
+            Number of estimators (decision trees) the Random Forest will use.
+        """
         self.tf_graph = tf_graph
 
         # TODO: the number of Tensorflow variables should not be fixed but instead should change dynamically as the model grows
-
         with self.tf_graph.as_default():
             self.w = tf.Variable(tf.random_normal([1000], mean=0, stddev=1), name='coefficients')
 
@@ -18,6 +27,16 @@ class Equation:
         self.datasets = {}
 
     def produce_equations(self, session):
+        """
+        Selection constructor function
+
+        Athena uses a random forest from Scikit-Learn to select the best parameters. Use this constructor to create a Selection class.
+
+        Parameters
+        ----------
+        session : ?
+            Number of estimators (decision trees) the Random Forest will use.
+        """
         from tensorflow.python.framework.ops import Tensor
         from sympy.core.symbol import Symbol
 
@@ -31,20 +50,44 @@ class Equation:
                 assert isinstance(sub[1], Symbol)
 
                 # TODO: investigate why the following line produces a KeyError in Sympy
-                e["equation-string"] = e["equation-string"].subs(sub[1],
-                                                                 session.run(sub[0]) if isinstance(sub[0], Tensor) else
-                                                                 sub[0])
+                e["equation-string"] = e["equation-string"].subs(sub[1], session.run(sub[0]) if isinstance(sub[0], Tensor) else sub[0])
 
             equation.append(e["equation-string"])
 
         return equation
 
     def set_weights(self, new_weights):
+        """
+        Selection constructor function
+
+        Athena uses a random forest from Scikit-Learn to select the best parameters. Use this constructor to create a Selection class.
+
+        Parameters
+        ----------
+        new_weights : ?
+            Number of estimators (decision trees) the Random Forest will use.
+        """
         return self.w.assign(new_weights)
 
     # TODO: change min and max names so they don't shadow the built in functions
     @staticmethod
     def normalize(_array, _string, min=None, max=None):
+        """
+        Selection constructor function
+
+        Athena uses a random forest from Scikit-Learn to select the best parameters. Use this constructor to create a Selection class.
+
+        Parameters
+        ----------
+        _array : list
+            Number of estimators (decision trees) the Random Forest will use.
+        _string : str
+            Number of threads the Random Forest will utilize.
+        min : float
+            Number of threads the Random Forest will utilize.
+        max : float
+            Number of threads the Random Forest will utilize.
+        """
         from sympy import symbols
         from math import isclose
 
@@ -69,6 +112,18 @@ class Equation:
 
 
 def get_symbols(start, end):
+    """
+    Selection constructor function
+
+    Athena uses a random forest from Scikit-Learn to select the best parameters. Use this constructor to create a Selection class.
+
+    Parameters
+    ----------
+    start : int
+        Number of estimators (decision trees) the Random Forest will use.
+    end : int
+        Number of threads the Random Forest will utilize.
+    """
     return symbols(" ".join(["v{}".format(s) for s in list(range(start, end))]))
 
 
@@ -237,8 +292,7 @@ def Sinusoidal(self, x, x_string, h, h_string):
         x + self.w[self._wc + 3])
 
     if isinstance(x_string, dict) or isinstance(h_string, dict):
-        # at this time multi-variable functions do not support composition
-        raise NotImplementedError()
+        raise NotImplementedError("At this time multi-variable functions do not support composition.")
 
     syms = get_symbols(1, offset + variables + 1)
     equation_string = syms[0] * (sin(syms[-1] * 2 * pi + syms[1]) + syms[2]) * (syms[-2] + syms[3])
@@ -265,8 +319,7 @@ def MultiPolynomial(self, *args):
 
     for x_string in equation_objects:
         if isinstance(x_string, dict):
-            # at this time multi-variable functions do not support composition
-            raise NotImplementedError()
+            raise NotImplementedError("At this time multi-variable functions do not support composition.")
 
     sub_eq = 1
     j = 2
@@ -309,8 +362,7 @@ def WeightedAverage(self, *args):
 
     for x_string in equation_objects:
         if isinstance(x_string, dict):
-            # at this time multi-variable functions do not support composition
-            raise NotImplementedError()
+            raise NotImplementedError("At this time multi-variable functions do not support composition.")
 
     eq = 0
     weights = []
@@ -352,8 +404,7 @@ def MultiDimensionalSecant(self, *args):
 
     for x_string in equation_objects:
         if isinstance(x_string, dict):
-            # at this time multi-variable functions do not support composition
-            raise NotImplementedError()
+            raise NotImplementedError("At this time multi-variable functions do not support composition.")
 
     sub_eq = 1
     j = 2

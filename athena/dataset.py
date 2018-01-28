@@ -1,5 +1,19 @@
 class Dataset():
 	def __init__(self, training_df, testing_df, parameters_map=None):
+		"""
+		Constructor for the Dataset class
+
+		We can initialize our datasets along with their parameter map using the Dataset class. An example of this is show below.
+
+        >>> fw = athena.Framework(framework_parameters)
+		>>> fw.add_dataset(Dataset(training_df, testing_df, parameters_map))
+
+		Parameters
+		----------
+		training_df : pandas.DataFrame
+		testing_df : pandas.DataFrame
+		parameters_map : dict
+		"""
 		import numpy as np
 		from pandas import DataFrame
 		from athena.equations import Equation
@@ -61,11 +75,24 @@ class Dataset():
 				self.ds["training"][column_name] = training_df[column_name].values.astype(np.float32), variable_name
 				self.ds["testing"][column_name] = testing_df[column_name].values.astype(np.float32), variable_name
 
-	def get(self, p: str):
+	def get(self, p):
+		"""
+		Get either training or testing from dataset
+
+		Parameters
+		----------
+		p : str
+			One of [training, testing], so long as it is contained within the ds variable (which is a dict).
+		"""
 		assert p in self.ds
 		return self.ds[p]
 
 
 	def get_columns(self):
+		"""
+		Get dataset columns
+
+		The function returns a list of the columns in the training (which is identical to the testing) dataframe/dataset.
+		"""
 		return list(self.ds["training"].keys())
 

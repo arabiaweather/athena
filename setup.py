@@ -9,7 +9,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='athena',
-    version='0.0.2',
+    version='0.0.3',
     description='Automatic equation building using machine-learning based curve-fitting techniques.',
     long_description=long_description,
     url='https://github.com/arabiaweather/athena',
@@ -17,5 +17,5 @@ setup(
     author_email='khaled.sharif@arabiaweather.com',
     keywords='machine-learning curve-fitting data-science',
     packages=find_packages(exclude=['contrib', 'docs', 'tests', 'notebooks', 'examples']),
-    install_requires=['pandas', 'tensorflow', 'sklearn', 'sympy', 'scipy'],
+    install_requires=['pandas', 'tensorflow', 'sklearn', 'sympy', 'scipy', 'numpy'],
 )

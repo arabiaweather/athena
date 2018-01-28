@@ -1,25 +1,52 @@
 class Model:
     def __init__(self, framework):
+        """
+		Constructor for the Model class
+
+		There are many types of model equations we can use through Athena as a base for our
+		equation building blocks. The simplest of which is the Additive Model; this means
+		that every function in this model is added. There are more complex models available
+		to the user, such as the multiplicative model and the composite model.
+
+		The model class is constructed through an Athena Framework class.
+
+		Parameters
+		----------
+		framework : athena.framework.Framework
+		"""
         from athena.framework import Framework
         assert isinstance(framework, Framework)
-
         self.learning_equations = None
         self.training_equation = framework.eqn
         self.testing_equation = framework.eqn_test
         self.datasets = framework.dataset
-
         self.model_construction = []
 
     def get_training_equation(self):
+        """
+		Get the training equation being used in this model
+		"""
         assert "training" in self.learning_equations
         return self.learning_equations["training"]
 
     def get_testing_equation(self):
+        """
+		Get the testing equation being used in this model
+		"""
         assert "testing" in self.learning_equations
         return self.learning_equations["testing"]
 
     @staticmethod
     def function_definition(equation_class, parameters_list, equation_string):
+        """
+        Function definition (static method)
+
+        Parameters
+        ----------
+        equation_class : athena.equations.Equation
+        parameters_list : list
+        equation_string : str
+        """
         equation_class.equations.append({
             "equation-string": equation_string,
             "substitutions": parameters_list,
@@ -27,13 +54,24 @@ class Model:
 
     @staticmethod
     def add_offset(equation_class, offset):
+        """
+        Function definition (static method)
+
+        Parameters
+        ----------
+        equation_class : athena.equations.Equation
+        offset : ?
+        """
         equation_class._wc += offset
 
 
 class AdditiveModel(Model):
     def add(self, *args, **kwargs):
+        """
+		Helper function for calculating a mean confidence interval
 
-        # print("model: ", *args)
+		Athena uses a random forest from Scikit-Learn to select the best parameters. Use this constructor to create a Selection class.
+		"""
         from types import FunctionType
         function, parameter = None, None
 
@@ -110,6 +148,22 @@ class AdditiveModel(Model):
                 self.add_residual(_eqn, function[:-1], result, learning_case, **kwargs)
 
     def add_residual(self, _eqn, function, parameter, learning_case, **kwargs):
+        """
+		Helper function for calculating a mean confidence interval
+
+		Athena uses a random forest from Scikit-Learn to select the best parameters. Use this constructor to create a Selection class.
+
+		Parameters
+		----------
+		_eqn : ?
+			Number of estimators (decision trees) the Random Forest will use.
+		function : ?
+			Number of threads the Random Forest will utilize.
+		parameter : ?
+			Number of threads the Random Forest will utilize.
+		learning_case : ?
+			Number of threads the Random Forest will utilize.
+		"""
         f = function[-1]
 
         if parameter is not None and isinstance(parameter, str):
@@ -133,14 +187,35 @@ class AdditiveModel(Model):
             self.add_residual(_eqn, function[:-1], parameter, learning_case, **kwargs)
 
     @staticmethod
-    def consolidate(list_of_equations: list):
-        assert isinstance(list_of_equations, list)
+    def consolidate(list_of_equations):
+        """
+		Helper function for calculating a mean confidence interval
 
+		Athena uses a random forest from Scikit-Learn to select the best parameters. Use this constructor to create a Selection class.
+
+		Parameters
+		----------
+		list_of_equations : list
+			Number of estimators (decision trees) the Random Forest will use.
+		"""
+        assert isinstance(list_of_equations, list)
         return sum(list_of_equations)
 
 
 class MultiplicativeModel(Model):
     def add(self, function, parameter=None):
+        """
+		Helper function for calculating a mean confidence interval
+
+		Athena uses a random forest from Scikit-Learn to select the best parameters. Use this constructor to create a Selection class.
+
+		Parameters
+		----------
+		function : ?
+			Number of estimators (decision trees) the Random Forest will use.
+		parameter : ?
+			Number of threads the Random Forest will utilize.
+		"""
         if parameter is not None:
             assert isinstance(parameter, str)
 
@@ -159,7 +234,17 @@ class MultiplicativeModel(Model):
                 self.learning_equations[learning_case] *= function(_eqn)
 
     @staticmethod
-    def consolidate(list_of_equations: list):
+    def consolidate(list_of_equations):
+        """
+		Helper function for calculating a mean confidence interval
+
+		Athena uses a random forest from Scikit-Learn to select the best parameters. Use this constructor to create a Selection class.
+
+		Parameters
+		----------
+		list_of_equations : list
+			Number of estimators (decision trees) the Random Forest will use.
+		"""
         assert isinstance(list_of_equations, list)
         x = list_of_equations[0]
         for y in list_of_equations[1:]: x *= y

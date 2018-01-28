@@ -1,13 +1,23 @@
+from __future__ import print_function
 from athena.equations import *
-from sympy import Symbol, lambdify, N
 import numpy as np
 from athena.framework import Framework
-from athena.helpers import mean_confidence_interval
 from sympy.core.cache import clear_cache
 
 
 class RandomSearch:
     def __init__(self, framework, search_length=100, equation_length=25, equations=None, starting_equations=None):
+        """
+        RandomSearch constructor function
+
+        Parameters
+        ----------
+        framework : athena.Framework
+        search_length : int
+        equation_length : int
+        equations : list
+        starting_equations : list
+        """
         self.search_length = search_length
         self.equation_length = equation_length
         self.framework = framework
@@ -20,9 +30,17 @@ class RandomSearch:
             assert isinstance(equations, list)
             self.functions = equations
         else:
+            # Below are the default starting equations; these may change in the future depending on experimental results
             self.functions = [SimpleSinusoidal, SimplePolynomial, BipolarPolynomial, Sinusoidal, MultiPolynomial]
 
     def iteration(self, return_constituents=False):
+        """
+        RandomSearch class's iteration function
+
+        Parameters
+        ----------
+        return_constituents : bool
+        """
         from random import choice, randint
         from sklearn.metrics import mean_absolute_error, r2_score
         from scipy.stats import pearsonr
@@ -127,6 +145,14 @@ class RandomSearch:
         del fw
 
     def search(self, metric="testing_r2", return_constituents=False):
+        """
+        RandomSearch class's search function
+
+        Parameters
+        ----------
+        metric : str
+        return_constituents : bool
+        """
         from tqdm import tqdm
         from threading import Thread, Semaphore
         from os import cpu_count
@@ -161,7 +187,16 @@ class RandomSearch:
 
 
 class GeneticSearch:
-    def __init__(self, fw: Framework, search_length, equation_length):
+    def __init__(self, fw, search_length, equation_length):
+        """
+        GeneticSearch constructor
+
+        Parameters
+        ----------
+        fw : athena.Framework
+        search_length : int
+        equation_length: int
+        """
         from math import inf as infinity
         self.fw = fw
 
@@ -174,9 +209,20 @@ class GeneticSearch:
         self.best_r2_score = -1 * infinity
 
     def _remove_indices(self, x, indices):
+        """
+        GeneticSearch class private function to remove indices
+
+        Parameters
+        ----------
+        x : ?
+        indices : ?
+        """
         return [i for j, i in enumerate(x) if j not in indices]
 
     def iteration(self):
+        """
+        GeneticSearch class's iteration function
+        """
         self.iterations += 1
 
         while True:

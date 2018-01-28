@@ -22,8 +22,8 @@ pip install git+git://github.com/arabiaweather/athena.git
 
 Working with Athena can be as simple or as advanced as you need it to be. To demonstrate Athena's equation building capabilities, we'll fit a straight line to noisy data.
 ```python
-x = numpy.linspace(0.0, 1.0, 100)
-y = x + numpy.random.uniform(-0.1, 0.1, *x.shape)
+x = numpy.linspace(0.0, 1.0, 10000)
+y = x + 5.0 + numpy.random.uniform(-0.1, 0.1, *x.shape)
 df = pandas.DataFrame(data={"x": x, "y": y})
 ```
 
@@ -38,18 +38,18 @@ Here comes the fun part: Athena has built in hundreds of equation types that you
 ```python
 model = AdditiveModel(fw)
 model.add(Bias)
-model.add(FlexiblePower, "x")
+model.add(MultiPolynomial, "x")
 fw.initialize(model, A["y"].values)
 ```
 
 The only part left to get your equation is to train your model; this part can be sped up dramatically by using a CUDA-enabled GPU or by running Athena on a cluster. The result is very close to a straight line equation!
 ```python
 fw.train()
-print(fw.produce_equation())
+print("y =", fw.produce_equation())
 ```
 
 ```
-> y = 0.990 * x**0.981 - 0.005
+> y = 1.00098*x + 4.99821
 ```
 The resulting equation can be pretty printed to a Python notebook, or better yet, can be converted to LaTeX for use in an academic paper easily.
 
