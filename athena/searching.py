@@ -1,7 +1,6 @@
 from __future__ import print_function
 from athena.equations import *
 import numpy as np
-from athena.framework import Framework
 from sympy.core.cache import clear_cache
 
 
@@ -155,7 +154,7 @@ class RandomSearch:
         """
         from tqdm import tqdm
         from threading import Thread, Semaphore
-        from os import cpu_count
+        from multiprocessing import cpu_count
         import sys
 
         self.equations = []

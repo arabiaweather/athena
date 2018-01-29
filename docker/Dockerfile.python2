@@ -15,4 +15,4 @@ WORKDIR /code
 
 RUN pip install -e /code/athena
 
-CMD python /code/tests/basic.py
+CMD python /code/tests/basic.py && python /code/tests/genetic.py

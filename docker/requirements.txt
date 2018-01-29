@@ -4,3 +4,4 @@ tensorflow
 sympy
 pandas
 sklearn
+tqdm

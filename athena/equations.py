@@ -89,7 +89,7 @@ class Equation:
             Number of threads the Random Forest will utilize.
         """
         from sympy import symbols
-        from math import isclose
+        from numpy import isclose
 
         if (min is None) and (max is None):
             _min, _max = np.percentile(_array, 1), np.percentile(_array, 99)
