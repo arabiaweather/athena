@@ -1,5 +1,7 @@
 # Athena
-[![Documentation Status](https://readthedocs.org/projects/arabiaweather-athena/badge/?version=latest)](http://arabiaweather-athena.readthedocs.io/en/latest/?badge=latest) [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
+[![Documentation Status](https://readthedocs.org/projects/arabiaweather-athena/badge/?version=latest)](http://arabiaweather-athena.readthedocs.io/en/latest/?badge=latest) 
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1626/badge)](https://bestpractices.coreinfrastructure.org/projects/1626)
 
 ## Accelerated equation building for academia and research
 Athena is a high-level framework for equation building and curve fitting, written in Python and built on top of [Tensorflow](https://github.com/tensorflow/tensorflow); this means you can build large equations and perform curve fitting on your CPU, GPU, or cluster, without the constraints of traditional curve fitting toolboxes or any degradation in performance. Athena was developed with academia and researchers in mind: it is therefore abstract and simple to use (quickly fit an equation of choice to tabular data), while still remaining powerful and highly customizable (automatically search through millions of different mathematical equation forms and find the most accurate one).
