@@ -5,6 +5,13 @@
 
 ## Accelerated equation building for academia and research
 Athena is a high-level framework for equation building and curve fitting, written in Python and built on top of [Tensorflow](https://github.com/tensorflow/tensorflow); this means you can build large equations and perform curve fitting on your CPU, GPU, or cluster, without the constraints of traditional curve fitting toolboxes or any degradation in performance. Athena was developed with academia and researchers in mind: it is therefore abstract and simple to use (quickly fit an equation of choice to tabular data), while still remaining powerful and highly customizable (automatically search through millions of different mathematical equation forms and find the most accurate one).
+
+If you are interested in learning more about the mathematics behind Athena, you may read:
+
+[Building and Evaluating Interpretable Models using Symbolic Regression and Generalized Additive Models](https://sites.google.com/site/automl2017icml/accepted-papers/AutoML_2017_paper_21.pdf)
+
+which was published in the proceedings of the [AutoML workshop at ICML 2017](https://sites.google.com/site/automl2017icml/accepted-papers).
+
 ## What can Athena do?
 
 * Fit an arbitrary length mathematical equation to large amounts of data.
